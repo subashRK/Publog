@@ -1,0 +1,13 @@
+{% include "base.html" %} {% block content %} {% load crispy_forms_tags %}
+<form
+  method="post"
+  class="mt-5 mb-2 mx-auto rounded p-3 shadow col-8 col-lg-5 col-md-6"
+>
+  <legend class="border-bottom pb-1">
+    <h2 class="fs-4 fw-normal">{{ title }}</h2>
+  </legend>
+  {% csrf_token %} {{ form|crispy }}
+  <div class="border-bottom my-2"></div>
+  <button class="btn btn-primary col-12 mb-1" type="submit">{{ title }}</button>
+</form>
+{% endblock %}

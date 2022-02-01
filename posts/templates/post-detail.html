@@ -1,0 +1,145 @@
+{% include 'posts.html' with posts=post single_post=True %}
+<div class="container mt-4 mb-2">
+  <hr class="mb-0" />
+  <h2 class="fw-normal fs-3 mt-2 mb-3">Comments</h2>
+  <a
+    data-create-comment
+    href="{% url 'add_comment' post.id %}?next="
+    class="btn btn-success"
+    >Create New Comment</a
+  >
+  {% for comment in comments %}
+  <div class="mt-3 card px-3 py-2">
+    <div
+      class="d-flex align-items-center justify-content-start border-bottom pb-2 flex-wrap"
+    >
+      <img
+        src="{{ comment.user.profile.image.url }}"
+        alt="{{ comment.user.username }}"
+        class="rounded-circle me-2"
+        width="50"
+        height="50"
+      />
+      <div class="text-break flex-fill">
+        <p class="fs-5 m-0">{{ comment.user.username }}</p>
+        <p class="fs-6 m-0 text-secondary">{{ comment.user.email }}</p>
+      </div>
+      <div class="text-secondary">{{ comment.timestamp|date:"d/m/y" }}</div>
+    </div>
+
+    {% if user.id == comment.user.id %}
+    <p class="mt-2 pb-2 border-bottom">{{ comment.comment }}</p>
+    <div class="btn-group mb-1" style="width: fit-content">
+      {% if not user.is_authenticated %}
+      <button class="btn btn-primary" disabled>
+        Likes
+        <span data-like-count class="badge bg-secondary rounded-pill"
+          >{{ comment.likes.count }}</span
+        >
+      </button>
+      {% else %}
+      <a
+        data-like-comment
+        href="{% url 'like_comment' comment.id %}"
+        class="btn btn-primary"
+      >
+        <div class="d-inline" id="comment-like-action-for-{{ post.id }}">
+          {% if user in comment.likes.all %} Unlike {% else %} Like {% endif %}
+        </div>
+
+        <span
+          id="comment-like-count-for-{{ comment.id }}"
+          class="badge bg-secondary rounded-pill"
+          >{{ comment.likes.count }}</span
+        >
+      </a>
+      {% endif %}
+      <a
+        data-edit-comment
+        href="{% url 'edit_comment' comment.id %}?next="
+        class="btn btn-outline-secondary"
+        >Edit</a
+      >
+      <a
+        data-delete-comment
+        href="{% url 'delete_comment' comment.id %}?next="
+        class="btn btn-outline-danger"
+        >Delete</a
+      >
+    </div>
+    {% else %}
+    <p class="mt-2 mb-0">{{ comment.comment }}</p>
+    {% endif %}
+  </div>
+
+  {% endfor %}
+</div>
+
+<script>
+  const createCommentButtonEl = document.querySelectorAll(
+    "[data-create-comment]"
+  )
+  const editCommentButtonEl = document.querySelectorAll("[data-edit-comment]")
+  const deleteCommentButtonEl = document.querySelectorAll(
+    "[data-delete-comment]"
+  )
+  const commentLikeEls = document.querySelectorAll("[data-like-comment]")
+
+  createCommentButtonEl.forEach(elem => (elem.href += window.location.href))
+  editCommentButtonEl.forEach(elem => (elem.href += window.location.href))
+  deleteCommentButtonEl.forEach(elem => (elem.href += window.location.href))
+
+  function getCookie(name) {
+    var cookieValue = null
+    if (document.cookie && document.cookie !== "") {
+      var cookies = document.cookie.split(";")
+      for (var i = 0; i < cookies.length; i++) {
+        var cookie = cookies[i].trim()
+        if (cookie.substring(0, name.length + 1) === name + "=") {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1))
+          break
+        }
+      }
+    }
+    return cookieValue
+  }
+
+  commentLikeEls.forEach(likeEl =>
+    likeEl.addEventListener("click", e => {
+      e.preventDefault()
+
+      const requestPath = likeEl.href
+
+      fetch(requestPath, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "X-CSRFToken": getCookie("csrftoken"),
+        },
+      })
+        .then(res => {
+          if (res.ok) return res.json()
+          return Promise.reject(res)
+        })
+        .then(data => {
+          const likeActionEl = document.querySelector(
+            `#comment-like-action-for-${
+              requestPath.split("/")[requestPath.split("/").length - 2]
+            }`
+          )
+
+          document.querySelector(
+            `#comment-like-count-for-${
+              requestPath.split("/")[requestPath.split("/").length - 2]
+            }`
+          ).textContent = data.likes
+
+          if (data["like_action"] === "added")
+            return (likeActionEl.textContent = "Unlike")
+          likeActionEl.textContent = "Like"
+        })
+        .catch(err => alert("Something went wrong!" + err))
+    })
+  )
+</script>

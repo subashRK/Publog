@@ -1,0 +1,161 @@
+{% include "base.html" %} {% block content %}
+<div class="container-fluid">
+  <div
+    class="p-3 d-flex align-items-center text-wrap border-bottom"
+    style="height: 35vmin"
+  >
+    <img
+      class="rounded-circle"
+      style="object-fit: cover; height: 30vmin; width: 30vmin"
+      src="{{ user_data.profile.image.url }}"
+      alt="{{ user_data.username }}"
+    />
+    <div class="ms-4">
+      <h2 class="fw-normal mb-0" style="font-size: 4vmin">
+        {{ user_data.username }}
+      </h2>
+      <h3 class="text-secondary fw-normal" style="font-size: 3vmin">
+        {{ user_data.email }}
+      </h3>
+      <h4
+        class="fw-normal mt-3 no-scrollbar"
+        style="overflow: scroll; max-height: 15vmin; font-size: 2.75vmin"
+      >
+        Bio: {{ user_data.profile.bio }}
+      </h4>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-center mt-5">
+    <div class="btn-group-vertical" style="min-width: 45%">
+      <a href="{% url 'user_posts' user_data.id %}" class="btn btn-danger"
+        >See Posts</a
+      >
+      {% if user.id == user_data.id %}
+      <a href="{% url 'update_user' %}" class="btn btn-outline-danger"
+        >Update</a
+      >
+      <a href="{% url 'update_password' %}" class="btn btn-outline-danger"
+        >Change Password</a
+      >
+      {% elif user.is_authenticated %}
+      <a
+        data-follow-el
+        href="{% url 'follow' user_data.id %}"
+        class="btn btn-outline-danger"
+        ><span data-follow-action
+          >{% if user in user_data.profile.followers.all %} Unfollow {% else %}
+          Follow {% endif %}</span
+        >
+        <span data-follow-count class="badge bg-secondary rounded-pill"
+          >{{ user_data.profile.followers.count }}</span
+        ></a
+      >
+      {% endif %}
+    </div>
+  </div>
+
+  {% if user_data.profile.following.count != 0 %}
+  <div class="mt-5 fs-4">{{ user_data.username }} is Following:</div>
+  <hr />
+  <div class="mt-3 d-flex" style="gap: 1rem">
+    {% for following in user_data.profile.following.all %}
+    <div
+      data-redirect="{% url 'profile' following.id %}"
+      class="d-flex flex-column align-items-center"
+      style="cursor: pointer"
+    >
+      <img
+        src="{{ following.profile.image.url }}"
+        style="width: 200px; height: 200px"
+        alt="{{ following.username }}"
+        class="rounded-circle"
+      />
+      <p class="mt-2">{{ following.username }}</p>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <!-- Prettier's problem -->
+  {% if user_data.id == user.id and user_data.profile.followers.count != 0 %}
+  <div class="mt-5 fs-4">Your followers:</div>
+  <hr />
+  <div class="mt-3 d-flex" style="gap: 1rem">
+    {% for follower in user_data.profile.followers.all %}
+    <div
+      data-redirect="{% url 'profile' follower.id %}"
+      class="d-flex flex-column align-items-center"
+      style="cursor: pointer"
+    >
+      <img
+        src="{{ follower.profile.image.url }}"
+        style="width: 200px; height: 200px"
+        alt="{{ follower.username }}"
+        class="rounded-circle"
+      />
+      <p class="mt-2">{{ follower.username }}</p>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+<script>
+  const followEl = document.querySelector("[data-follow-el]")
+  const clickableProfileEl = document.querySelectorAll("[data-redirect]")
+
+  function getCookie(name) {
+    var cookieValue = null
+    if (document.cookie && document.cookie !== "") {
+      var cookies = document.cookie.split(";")
+      for (var i = 0; i < cookies.length; i++) {
+        var cookie = cookies[i].trim()
+        if (cookie.substring(0, name.length + 1) === name + "=") {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1))
+          break
+        }
+      }
+    }
+    return cookieValue
+  }
+
+  if (followEl) {
+    followEl.addEventListener("click", e => {
+      e.preventDefault()
+
+      const requestPath = followEl.href
+
+      fetch(requestPath, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "X-CSRFToken": getCookie("csrftoken"),
+        },
+      })
+        .then(res => {
+          if (res.ok) return res.json()
+          return Promise.reject(res)
+        })
+        .then(data => {
+          const followActionEl = document.querySelector("[data-follow-action]")
+
+          document.querySelector("[data-follow-count]").textContent =
+            data["followers_count"]
+
+          if (data["follow_action"] === "added")
+            return (followActionEl.textContent = "Unfollow")
+          followActionEl.textContent = "Follow"
+        })
+        .catch(err => alert("Something went wrong!" + err))
+    })
+  }
+
+  clickableProfileEl.forEach(el => {
+    el.addEventListener(
+      "click",
+      () => (window.location.href = el.dataset.redirect)
+    )
+  })
+</script>

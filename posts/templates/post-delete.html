@@ -1,0 +1,7 @@
+{% include "base.html" %} {% block content %} {% load crispy_forms_tags %}
+<form method="post" class="m-5">
+  <h2 class="fs-4 fw-normal">Are you sure do you want to delete this post?</h2>
+  {% csrf_token %}
+  <button class="btn btn-danger mb-1" type="submit">Delete</button>
+</form>
+{% endblock %}

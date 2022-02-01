@@ -1,0 +1,8 @@
+{% include "base.html" %} {% block content %} {% load crispy_forms_tags %}
+<div class="mt-5 mx-5 mb-2 p-3 alert alert-success">
+  <h2 class="fw-normal fs-5 d-inline me-2">
+    You have been logged out!
+    <a href="{% url 'login' %}">Login</a> using this link.
+  </h2>
+</div>
+{% endblock %}
